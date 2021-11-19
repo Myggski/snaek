@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections;
 using AStar;
+using Extensions;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 public class SnakeHead : MonoBehaviour {
     [SerializeField]
@@ -10,13 +13,14 @@ public class SnakeHead : MonoBehaviour {
     private PogList<GameObject> _snakeBody;
     private int _totalScore;
     private Vector2Int _lookAtDirection = Vector2Int.right;
-    private Vector2Int[] _path;
+    private Vector2Int[] _autopilotPath;
+    private int _autopilotPathIndex = 0;
 
     private Vector2Int SnakeHeadPosition => Vector2Int.FloorToInt(_snakeBody[0].transform.position);
     private Vector2Int NextPosition => SnakeHeadPosition + _lookAtDirection;
-
-    public static event Action<int> OnSnakeScore;
     
+    public static event Action<int> OnSnakeScore;
+
     /// <summary>
     /// Get the snake tile from head and adds it to the grid
     /// Creates a linked list (PogList) of all the snake parts
@@ -27,15 +31,21 @@ public class SnakeHead : MonoBehaviour {
         _snakeBody.Add(gameObject);
         _totalScore = 0;
 
-        RythmHandler.RythmEvent += ChangePosition;
-        GameBoard.GameOverEvent += ClearEvent;
+        RythmHandler.OnRythmPlay += ChangePosition;
+        GameBoard.OnGameOver += ClearEvents;
+        GameBoard.OnFoodSpawned += SearchForPath;
+        GameBoard.OnSetAutopilot += SearchForPath;
     }
 
     /// <summary>
-    /// Clears the event on destroy
+    /// Clears the methods from the events
     /// </summary>
-    private void ClearEvent() {
-        OnSnakeScore = null;
+    private void ClearEvents()
+    {
+        RythmHandler.OnRythmPlay -= ChangePosition;
+        GameBoard.OnGameOver -= ClearEvents;
+        GameBoard.OnFoodSpawned -= SearchForPath;
+        GameBoard.OnSetAutopilot -= SearchForPath;
     }
 
     /// <summary>
@@ -44,7 +54,7 @@ public class SnakeHead : MonoBehaviour {
     /// <param name="value">A Vector2 that contains what direction the snake head is facing</param>
     public void ChangeDirection(InputAction.CallbackContext value) {
         // Preventing pause-meta gaming, the player can't pause then change direction
-        if (GameBoard.IsGamePaused)
+        if (GameBoard.IsGamePaused || GameBoard.Autopilot)
         {
             return;
         }
@@ -89,17 +99,76 @@ public class SnakeHead : MonoBehaviour {
         else
         {
             MoveSnake();
+            
+            if (GameBoard.Autopilot && !ReferenceEquals(_autopilotPath, null))
+            {
+                AutoPilotDirectionHandling();
+            }
         }
-        
-        PathRequestManager.RequestPath(
-            Vector2Int.FloorToInt(transform.position),
-            Vector2Int.FloorToInt(GameBoard.FoodPosition),
-            OnPathFound
-        );
     }
 
-    private void OnPathFound(Vector2Int[] path, bool pathFound) {
-        _path = pathFound ? path : null;
+    private void OnSearchFinished(Vector2Int[] path, bool pathSuccessful) {
+        if (pathSuccessful) {
+            _autopilotPath = path;
+        }
+        
+        _autopilotPathIndex = 0;
+    }
+
+    private void AutoPilotDirectionHandling() {
+        Vector2Int currentWaypoint = _autopilotPath[_autopilotPathIndex];
+
+        if (SnakeHeadPosition == currentWaypoint) {
+            _autopilotPathIndex++;
+
+            if (_autopilotPathIndex >= _autopilotPath.Length)
+            {
+                SearchForPath();
+                return;
+            }
+        }
+        
+        currentWaypoint = _autopilotPath[_autopilotPathIndex];
+        Vector2Int direction = (currentWaypoint - SnakeHeadPosition).Normalize();
+
+        if (direction == Vector2Int.zero || IsOppositeDirection(direction))
+        {
+            GameBoard.CheckCollision(NextPosition, out ICollisionable collisionNode);
+
+            if (!ReferenceEquals(collisionNode, null) && collisionNode.TileType == TileType.Obstacle || IsOppositeDirection(direction))
+            {
+                direction = GetRandomDirection();
+            }
+            else
+            {
+                return;
+            }
+        }
+        
+        _lookAtDirection = direction;
+
+        GameBoard.CheckCollision(NextPosition, out ICollisionable collisionNode1);
+
+        if (!ReferenceEquals(collisionNode1, null) && collisionNode1.TileType == TileType.Obstacle)
+        {
+            _lookAtDirection = GetRandomDirection();
+        }
+    }
+
+    private Vector2Int GetRandomDirection()
+    {
+        Vector2Int[] directions =
+        {
+            Vector2Int.up,
+            Vector2Int.down,
+            Vector2Int.left,
+            Vector2Int.right,
+        };
+
+        Array.FindAll(directions,direction => direction != _lookAtDirection && !IsOppositeDirection(_lookAtDirection)
+        );
+
+        return directions[Random.Range(0, directions.Length)];
     }
 
     /// <summary>
@@ -108,7 +177,7 @@ public class SnakeHead : MonoBehaviour {
     public void Kill()
     {
         GameBoard.SetGameOver();
-        ClearEvent();
+        ClearEvents();
     }
     
     /// <summary>
@@ -117,7 +186,7 @@ public class SnakeHead : MonoBehaviour {
     public void GrowSnake()
     {
         Vector2Int currentSnakeHeadPosition = SnakeHeadPosition;
-        UpdateSnakeBodyPartPosition(0, 0, NextPosition);
+        UpdateSnakeBodyPartPosition(0, NextPosition);
         
         GameObject newBodyPart = GameBoard.InstantiateNode(snakeBodyPrefab, currentSnakeHeadPosition);
 
@@ -131,42 +200,57 @@ public class SnakeHead : MonoBehaviour {
         OnSnakeScore?.Invoke(_totalScore);
     }
 
+    private void SearchForPath()
+    {
+        PathRequestManager.RequestPath(
+            Vector2Int.FloorToInt(NextPosition),
+            Vector2Int.FloorToInt(GameBoard.FoodPosition),
+            OnSearchFinished
+        );
+    }
+
     /// <summary>
     /// Changes the position of the snake
     /// </summary>
-    private void MoveSnake() {
-        UpdateSnakeBodyPartPosition(0, _snakeBody.Count - 1, NextPosition);
+    private void MoveSnake()
+    {
+        Vector2Int moveToPosition = NextPosition;
+
+        for (int index = 0; index < _snakeBody.Count; index++)
+        {
+            moveToPosition = UpdateSnakeBodyPartPosition(index, moveToPosition);    
+        }
     }
     
     /// <summary>
     /// It's a recursive method that changes the position of every body part of the snake, including the head
     /// </summary>
     /// <param name="index">Index of the snake part (0 = snake head)</param>
-    /// <param name="maxNumberOfInteractions">How many times the method will be called</param>
-    /// <param name="nextPosition">The new position that the part will be moving to</param>
-    private void UpdateSnakeBodyPartPosition(int index, int maxNumberOfInteractions, Vector2Int nextPosition) {
+    /// <param name="moveToPosition">The new position that the part will be moving to</param>
+    private Vector2Int UpdateSnakeBodyPartPosition(int index, Vector2Int moveToPosition)
+    {
         Vector2Int tilePosition = Vector2Int.FloorToInt(_snakeBody[index].transform.position);
-        _snakeBody[index].transform.position = new Vector3(nextPosition.x, nextPosition.y, 0);
-        GameBoard.MoveNode(tilePosition, nextPosition);
+        _snakeBody[index].transform.position = new Vector3(moveToPosition.x, moveToPosition.y);
+        GameBoard.MoveNode(tilePosition, moveToPosition);
 
-        if (index < maxNumberOfInteractions) {
-            UpdateSnakeBodyPartPosition(index + 1, maxNumberOfInteractions, tilePosition);
-        }
+        return tilePosition;
     }
 
     private void Start() {
         Setup();
     }
 
-    private void OnDestroy() {
-        ClearEvent();
-    }
-
     private void OnDrawGizmos() {
-        if (_path != null) {
-            Gizmos.color = Color.magenta;
-            foreach (Vector2Int point in _path) {
-                Gizmos.DrawCube(new Vector3(point.x, point.y, 0), Vector3.one);
+        if (_autopilotPath != null && _autopilotPath.Length > 0)
+        {
+            Gizmos.color = Color.black;
+            Gizmos.DrawLine(NextPosition.ToVector2(), new Vector3(_autopilotPath[_autopilotPathIndex].x, _autopilotPath[_autopilotPathIndex].y));
+            
+            for (int i = 0; i < _autopilotPath.Length; i++) {
+                if (i != _autopilotPath.Length - 1)
+                {
+                    Gizmos.DrawLine(new Vector3(_autopilotPath[i].x, _autopilotPath[i].y), new Vector3(_autopilotPath[i + 1].x, _autopilotPath[i + 1].y));
+                }
             }
         }
     }

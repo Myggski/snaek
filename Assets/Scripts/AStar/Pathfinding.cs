@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace AStar
@@ -20,7 +19,6 @@ namespace AStar
 
         public void StartFindPath(Vector2Int startPosition, Vector2Int targetPosition)
         {
-
             StartCoroutine(FindPath(startPosition, targetPosition));
         }
 
@@ -31,7 +29,7 @@ namespace AStar
             Node startNode = _grid.NodeFromWorldPoint(startPosition);
             Node targetNode = _grid.NodeFromWorldPoint(targetPosition);
 
-            if (!startNode.Walkable && targetNode.Walkable)
+            if (startNode.Walkable && targetNode.Walkable)
             {
                 Heap<Node> openSet = new Heap<Node>(_grid.MaxSize);
                 HashSet<Node> closedSet = new HashSet<Node>();
@@ -100,13 +98,10 @@ namespace AStar
                 currentNode = currentNode.Parent;
             }
 
-            //Vector2Int[] simplifiedPath = SimplifyPath(path);
-            //Array.Reverse(simplifiedPath);
+            Vector2Int[] simplifiedPath = SimplifyPath(path);
+            Array.Reverse(simplifiedPath);
 
-            Vector2Int[] waypoints = path.Select(x => x.WorldPosition).ToArray();
-            Array.Reverse(waypoints);
-
-            return waypoints;
+            return simplifiedPath;
         }
 
         private Vector2Int[] SimplifyPath(List<Node> path)
@@ -114,16 +109,21 @@ namespace AStar
             List<Vector2Int> waypoints = new List<Vector2Int>();
             Vector2Int directionOld = Vector2Int.zero;
 
-            for (int i = 1; i < path.Count; i++)
+            if (path.Count > 0)
             {
-                Vector2Int directionNew =
-                    new Vector2Int(path[i - 1].X - path[i].X, path[i - 1].Y - path[i].Y);
-                if (directionNew != directionOld)
+                waypoints.Add(path[0].WorldPosition);
+                
+                for (int i = 1; i < path.Count; i++)
                 {
-                    waypoints.Add(path[i].WorldPosition);
-                }
+                    Vector2Int directionNew =
+                        new Vector2Int(path[i - 1].X - path[i].X, path[i - 1].Y - path[i].Y);
+                    if (directionNew != directionOld)
+                    {
+                        waypoints.Add(path[i].WorldPosition);
+                    }
 
-                directionOld = directionNew;
+                    directionOld = directionNew;
+                }
             }
 
             return waypoints.ToArray();

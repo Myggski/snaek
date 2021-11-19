@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class FoodSpawner : MonoBehaviour {
     [SerializeField]
@@ -10,7 +11,24 @@ public class FoodSpawner : MonoBehaviour {
     private void Setup() {
         TrySpawnFood();
         
-        SnakeHead.OnSnakeScore += _ => TrySpawnFood();
+        SnakeHead.OnSnakeScore += SpawnFoodEvent;
+    }
+
+    /// <summary>
+    /// Remove itself from OnSnakeScore event
+    /// </summary>
+    private void ClearEvent()
+    {
+        SnakeHead.OnSnakeScore -= SpawnFoodEvent;
+    }
+
+    /// <summary>
+    /// Creates a separate method that's specific to the OnSnakeScore event, else it wont clear the event properly on destroy
+    /// </summary>
+    /// <param name="_">Don't need total score in this method</param>
+    private void SpawnFoodEvent(int _)
+    {
+        TrySpawnFood();
     }
 
     /// <summary>
@@ -31,5 +49,10 @@ public class FoodSpawner : MonoBehaviour {
 
     private void Start() {
         Setup();
+    }
+
+    private void OnDestroy()
+    {
+        ClearEvent();
     }
 }

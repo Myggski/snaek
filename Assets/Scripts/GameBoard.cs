@@ -12,18 +12,24 @@ public class GameBoard : SingletonBase<GameBoard>
     private static bool _isGamePaused;
     private static bool _isGameOver;
     private static Vector2Int _foodPosition;
+    private static bool _autopilot;
     
-    public static event Action GameOverEvent;
+    public static event Action OnGameOver;
+    public static event Action OnFoodSpawned;
+    public static event Action OnSetAutopilot;
 
     public static bool IsGamePaused => _isGamePaused;
     public static bool IsGameOver => _isGameOver;
-    public static Vector2Int FoodPosition => _foodPosition; 
+    public static bool Autopilot => _autopilot;
+    public static Vector2Int FoodPosition => _foodPosition;
 
     /// <summary>
     /// Gets the grid and generates level and spawns snake
     /// </summary>
     private void Setup()
     {
+        _isGameOver = false;
+        _isGamePaused = false;
         _grid = GetComponent<Grid>();
         SetupOuterWalls();
         SpawnSnakeHead();
@@ -33,7 +39,7 @@ public class GameBoard : SingletonBase<GameBoard>
     /// Sets the event to null when destroyed
     /// </summary>
     private void ClearEvent() {
-        GameOverEvent = null;
+        OnGameOver = null;
     }
 
     /// <summary>
@@ -61,7 +67,7 @@ public class GameBoard : SingletonBase<GameBoard>
     public static void SetGameOver()
     {
         _isGameOver = true;
-        GameOverEvent?.Invoke();
+        OnGameOver?.Invoke();
     }
 
     /// <summary>
@@ -85,6 +91,8 @@ public class GameBoard : SingletonBase<GameBoard>
     public static void SpawnFood(GameObject foodPrefab, Vector2Int worldPosition) {
         _foodPosition = worldPosition;
         InstantiateNode(foodPrefab, worldPosition);
+        
+        OnFoodSpawned?.Invoke();
     }
 
     /// <summary>
@@ -110,6 +118,16 @@ public class GameBoard : SingletonBase<GameBoard>
     public static void MoveNode(Vector2Int from, Vector2Int to)
     {
         instance._grid.MoveNode(from, to);
+    }
+
+    public static void SetAutopilot(bool autopilot)
+    {
+        _autopilot = autopilot;
+
+        if (_autopilot)
+        {
+            OnSetAutopilot?.Invoke();
+        }
     }
 
     /// <summary>

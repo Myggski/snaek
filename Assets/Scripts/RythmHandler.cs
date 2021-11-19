@@ -9,7 +9,7 @@ public class RythmHandler : SingletonBase<RythmHandler>
     
     private float _currentTime = 0;
     
-    public static event Action RythmEvent;
+    public static event Action OnRythmPlay;
 
     /// <summary>
     /// Triggers RythmActivated event to let other things know when it's time to update position and such
@@ -20,26 +20,13 @@ public class RythmHandler : SingletonBase<RythmHandler>
 
         if (_currentTime >= updateFrequency)
         {
-            RythmEvent?.Invoke();
+            OnRythmPlay?.Invoke();
             _currentTime = 0;
         }
-    }
-
-    /// <summary>
-    /// Sets the event to null when destroyed
-    /// </summary>
-    private void ClearEvent() {
-        RythmEvent = null;
     }
     
     private void Update()
     {
         TryTriggerEvent();
-    }
-
-    protected override void OnDestroy() {
-        base.OnDestroy();
-
-        ClearEvent();
     }
 }

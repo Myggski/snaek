@@ -44,20 +44,25 @@ namespace AStar {
 
         public List<Node> GetNeigbors(Node node) {
             List<Node> neigbors = new List<Node>();
+            Vector2Int[] directions =
+            {
+                node.WorldPosition + new Vector2Int(-1, 0), // left
+                node.WorldPosition + new Vector2Int(1, 0), // right
+                node.WorldPosition + new Vector2Int(0, 1), // up
+                node.WorldPosition + new Vector2Int(0, -1) // down
+            };
 
-            for (int x = -1; x <= 1; x++) {
-                for (int y = -1; y <= 1; y++) {
-                    if (x == 0 && y == 0) {
-                        continue;
-                    }
+            foreach (Vector2Int direction in directions)
+            {
+                bool outsideX = direction.x < 0 || direction.x > GridSizeX;
+                bool outsideY = direction.y < 0 || direction.y > GridSizeY;
 
-                    int checkX = node.X + x;
-                    int checkY = node.Y + y;
-
-                    if (checkX >= 0 && checkX < GridSizeX && checkY >= 0 && checkY < GridSizeY) {
-                        neigbors.Add(_grid[checkX, checkY]);
-                    }
-                }   
+                if (outsideX || outsideY)
+                {
+                    continue;
+                }
+                
+                neigbors.Add(_grid[direction.x, direction.y]);
             }
 
             return neigbors;

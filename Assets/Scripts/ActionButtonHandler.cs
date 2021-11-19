@@ -27,8 +27,25 @@ public class ActionButtonHandler : MonoBehaviour
         _actionButtonText = _actionButton.GetComponentInChildren<TextMeshProUGUI>();
         _actionButton.onClick.AddListener(OnClickActionButton);
         
-        GameBoard.GameOverEvent += (() => ChangeActionButtonText(retryText));
+        GameBoard.OnGameOver += ChangeActionButtonText;
         ChangeActionButtonText(pauseText);
+    }
+
+    /// <summary>
+    /// Removes itself from OnGameOver event
+    /// </summary>
+    private void ClearEvent()
+    {
+        _actionButton.onClick.RemoveListener(OnClickActionButton);
+        GameBoard.OnGameOver -= ChangeActionButtonText;
+    }
+
+    /// <summary>
+    /// Creates a separate method that's specific to the GameOverEvent event, else it wont clear the event properly on destroy
+    /// </summary>
+    private void ChangeActionButtonText()
+    {
+        ChangeActionButtonText(retryText);
     }
 
     /// <summary>
@@ -64,5 +81,10 @@ public class ActionButtonHandler : MonoBehaviour
     private void Start()
     {
         Setup();
+    }
+
+    private void OnDestroy()
+    {
+        ClearEvent();
     }
 }

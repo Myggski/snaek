@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -13,13 +14,21 @@ public class GameOverDisplayer : MonoBehaviour
         _gameOverText = GetComponentInChildren<TextMeshProUGUI>();
         _gameOverText.enabled = false;
 
-        GameBoard.GameOverEvent += DisplayGameOverText;
+        GameBoard.OnGameOver += DisplayOnGameOverText;
+    }
+
+    /// <summary>
+    /// Removes itself from OnGameOver event
+    /// </summary>
+    private void ClearEvent()
+    {
+        GameBoard.OnGameOver -= DisplayOnGameOverText;
     }
 
     /// <summary>
     /// Displays the game over text if GameOverEvent triggers
     /// </summary>
-    private void DisplayGameOverText()
+    private void DisplayOnGameOverText()
     {
         _gameOverText.enabled = true;
     }
@@ -27,5 +36,10 @@ public class GameOverDisplayer : MonoBehaviour
     private void Start()
     {
         Setup();
+    }
+
+    private void OnDestroy()
+    {
+        ClearEvent();
     }
 }

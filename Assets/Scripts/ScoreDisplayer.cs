@@ -1,4 +1,6 @@
-﻿using TMPro;
+﻿using System;
+using System.Data;
+using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(TextMeshProUGUI))]
@@ -15,6 +17,11 @@ public class ScoreDisplayer : MonoBehaviour
         SnakeHead.OnSnakeScore += UpdateEventScore;
     }
 
+    private void ClearEvent()
+    {
+        SnakeHead.OnSnakeScore -= UpdateEventScore;
+    }
+
     /// <summary>
     /// When ScoreUpdateEvent triggers, it updates the score text
     /// </summary>
@@ -24,5 +31,10 @@ public class ScoreDisplayer : MonoBehaviour
 
     private void Start() {
         Setup();
+    }
+
+    private void OnDestroy()
+    {
+        ClearEvent();
     }
 }
