@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Toggle))]
@@ -18,21 +17,8 @@ public class AutopilotCheckboxHandler : MonoBehaviour
         _toggle.onValueChanged.AddListener(GameBoard.SetAutopilot);
     }
 
-    /// <summary>
-    /// Removes checkbox listener
-    /// </summary>
-    private void ClearListener()
-    {
-        _toggle.onValueChanged.RemoveListener(GameBoard.SetAutopilot);
-    }
-
     private void Start()
     {
         Setup();
-    }
-
-    private void OnDestroy()
-    {
-        ClearListener();
     }
 }

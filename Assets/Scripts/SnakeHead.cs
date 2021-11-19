@@ -128,7 +128,6 @@ public class SnakeHead : MonoBehaviour {
 
             if (_autopilotPathIndex >= _autopilotPath.Length)
             {
-                SearchForPath();
                 return;
             }
         }
@@ -136,20 +135,9 @@ public class SnakeHead : MonoBehaviour {
         currentWaypoint = _autopilotPath[_autopilotPathIndex];
         Vector2Int direction = (currentWaypoint - SnakeHeadPosition).Normalize();
 
-        if (direction == Vector2Int.zero || IsOppositeDirection(direction))
+        if (IsOppositeDirection(direction))
         {
-            Debug.Log(IsOppositeDirection(direction));
-            GameBoard.CheckCollision(NextPosition, out ICollisionable collisionNode);
-
-            if (!ReferenceEquals(collisionNode, null) && collisionNode.TileType == TileType.Obstacle || IsOppositeDirection(direction) || direction == Vector2Int.zero)
-            {
-                direction = GetRandomDirection();
-                Debug.Log("GOT RANDOM: " + IsOppositeDirection(direction));
-            }
-            else
-            {
-                return;
-            }
+            direction = GetRandomDirection(direction);
         }
 
         _lookAtDirection = direction;
@@ -159,7 +147,7 @@ public class SnakeHead : MonoBehaviour {
     /// Gets random direction
     /// </summary>
     /// <returns></returns>
-    private Vector2Int GetRandomDirection()
+    private Vector2Int GetRandomDirection(Vector2Int currentDirection)
     {
         Vector2Int[] directions =
         {
@@ -170,7 +158,7 @@ public class SnakeHead : MonoBehaviour {
         };
 
         // Remove opposite direction and the direction that is the same as current _lookAtDirection
-        Array.FindAll(directions,direction => direction != _lookAtDirection && IsOppositeDirection(direction));
+        Array.FindAll(directions,direction => direction != currentDirection && _lookAtDirection != direction && IsOppositeDirection(direction));
 
         return directions[Random.Range(0, directions.Length)];
     }

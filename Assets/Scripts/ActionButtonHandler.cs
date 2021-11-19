@@ -36,7 +36,6 @@ public class ActionButtonHandler : MonoBehaviour
     /// </summary>
     private void ClearEvent()
     {
-        _actionButton.onClick.RemoveListener(OnClickActionButton);
         GameBoard.OnGameOver -= ChangeActionButtonText;
     }
 
