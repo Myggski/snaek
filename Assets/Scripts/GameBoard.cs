@@ -12,7 +12,7 @@ public class GameBoard : SingletonBase<GameBoard>
     private static bool _isGamePaused;
     private static bool _isGameOver;
     private static Vector2Int _foodPosition;
-    private static bool _autopilot;
+    private static bool _isAutopilot;
     
     public static event Action OnGameOver;
     public static event Action OnFoodSpawned;
@@ -20,7 +20,7 @@ public class GameBoard : SingletonBase<GameBoard>
 
     public static bool IsGamePaused => _isGamePaused;
     public static bool IsGameOver => _isGameOver;
-    public static bool Autopilot => _autopilot;
+    public static bool IsAutopilot => _isAutopilot;
     public static Vector2Int FoodPosition => _foodPosition;
 
     /// <summary>
@@ -88,6 +88,11 @@ public class GameBoard : SingletonBase<GameBoard>
         Application.Quit();
     }
 
+    /// <summary>
+    /// Spawns food in the level
+    /// </summary>
+    /// <param name="foodPrefab">Prefab of food</param>
+    /// <param name="worldPosition">Where the food will be spawned</param>
     public static void SpawnFood(GameObject foodPrefab, Vector2Int worldPosition) {
         _foodPosition = worldPosition;
         InstantiateNode(foodPrefab, worldPosition);
@@ -120,11 +125,15 @@ public class GameBoard : SingletonBase<GameBoard>
         instance._grid.MoveNode(from, to);
     }
 
-    public static void SetAutopilot(bool autopilot)
+    /// <summary>
+    /// Triggers autopilot event for the snake
+    /// </summary>
+    /// <param name="isAutopilot">If it's time for autopilot or not</param>
+    public static void SetAutopilot(bool isAutopilot)
     {
-        _autopilot = autopilot;
+        _isAutopilot = isAutopilot;
 
-        if (_autopilot)
+        if (_isAutopilot)
         {
             OnSetAutopilot?.Invoke();
         }

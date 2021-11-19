@@ -46,10 +46,10 @@ namespace AStar {
             List<Node> neigbors = new List<Node>();
             Vector2Int[] directions =
             {
-                node.WorldPosition + new Vector2Int(-1, 0), // left
-                node.WorldPosition + new Vector2Int(1, 0), // right
-                node.WorldPosition + new Vector2Int(0, 1), // up
-                node.WorldPosition + new Vector2Int(0, -1) // down
+                node.WorldPosition + Vector2Int.left,
+                node.WorldPosition + Vector2Int.right,
+                node.WorldPosition + Vector2Int.up,
+                node.WorldPosition + Vector2Int.down
             };
 
             foreach (Vector2Int direction in directions)

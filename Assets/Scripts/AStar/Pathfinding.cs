@@ -100,7 +100,7 @@ namespace AStar
 
             Vector2Int[] simplifiedPath = SimplifyPath(path);
             Array.Reverse(simplifiedPath);
-
+            
             return simplifiedPath;
         }
 
@@ -119,7 +119,7 @@ namespace AStar
                         new Vector2Int(path[i - 1].X - path[i].X, path[i - 1].Y - path[i].Y);
                     if (directionNew != directionOld)
                     {
-                        waypoints.Add(path[i].WorldPosition);
+                        waypoints.Add(path[i - 1].WorldPosition);
                     }
 
                     directionOld = directionNew;

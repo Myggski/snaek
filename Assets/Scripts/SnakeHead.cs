@@ -54,7 +54,7 @@ public class SnakeHead : MonoBehaviour {
     /// <param name="value">A Vector2 that contains what direction the snake head is facing</param>
     public void ChangeDirection(InputAction.CallbackContext value) {
         // Preventing pause-meta gaming, the player can't pause then change direction
-        if (GameBoard.IsGamePaused || GameBoard.Autopilot)
+        if (GameBoard.IsGamePaused || GameBoard.IsAutopilot)
         {
             return;
         }
@@ -81,7 +81,12 @@ public class SnakeHead : MonoBehaviour {
     /// <param name="checkDirection">A direction that the snake wants to move to</param>
     /// <returns></returns>
     private bool IsOppositeDirection(Vector2 checkDirection) {
-        return _lookAtDirection == checkDirection * -1;
+        if (_snakeBody.Count > 1)
+        {
+            return checkDirection == Vector2Int.FloorToInt(_snakeBody[0].transform.position - _snakeBody[1].transform.position);    
+        }
+        
+        return checkDirection * -1 == _lookAtDirection;
     }
 
     /// <summary>
@@ -99,8 +104,8 @@ public class SnakeHead : MonoBehaviour {
         else
         {
             MoveSnake();
-            
-            if (GameBoard.Autopilot && !ReferenceEquals(_autopilotPath, null))
+
+            if (GameBoard.IsAutopilot && !ReferenceEquals(_autopilotPath, null))
             {
                 AutoPilotDirectionHandling();
             }
@@ -133,28 +138,27 @@ public class SnakeHead : MonoBehaviour {
 
         if (direction == Vector2Int.zero || IsOppositeDirection(direction))
         {
+            Debug.Log(IsOppositeDirection(direction));
             GameBoard.CheckCollision(NextPosition, out ICollisionable collisionNode);
 
-            if (!ReferenceEquals(collisionNode, null) && collisionNode.TileType == TileType.Obstacle || IsOppositeDirection(direction))
+            if (!ReferenceEquals(collisionNode, null) && collisionNode.TileType == TileType.Obstacle || IsOppositeDirection(direction) || direction == Vector2Int.zero)
             {
                 direction = GetRandomDirection();
+                Debug.Log("GOT RANDOM: " + IsOppositeDirection(direction));
             }
             else
             {
                 return;
             }
         }
-        
+
         _lookAtDirection = direction;
-
-        GameBoard.CheckCollision(NextPosition, out ICollisionable collisionNode1);
-
-        if (!ReferenceEquals(collisionNode1, null) && collisionNode1.TileType == TileType.Obstacle)
-        {
-            _lookAtDirection = GetRandomDirection();
-        }
     }
-
+    
+    /// <summary>
+    /// Gets random direction
+    /// </summary>
+    /// <returns></returns>
     private Vector2Int GetRandomDirection()
     {
         Vector2Int[] directions =
@@ -165,8 +169,8 @@ public class SnakeHead : MonoBehaviour {
             Vector2Int.right,
         };
 
-        Array.FindAll(directions,direction => direction != _lookAtDirection && !IsOppositeDirection(_lookAtDirection)
-        );
+        // Remove opposite direction and the direction that is the same as current _lookAtDirection
+        Array.FindAll(directions,direction => direction != _lookAtDirection && IsOppositeDirection(direction));
 
         return directions[Random.Range(0, directions.Length)];
     }
