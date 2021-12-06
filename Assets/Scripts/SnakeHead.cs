@@ -15,9 +15,9 @@ public class SnakeHead : MonoBehaviour {
     private Vector2Int _lookAtDirection = Vector2Int.right;
     private Vector2Int[] _autopilotPath;
     private int _autopilotPathIndex = 0;
+    private Vector2Int _nextPositionToMove;
 
     private Vector2Int SnakeHeadPosition => Vector2Int.FloorToInt(_snakeBody[0].transform.position);
-    private Vector2Int NextPosition => SnakeHeadPosition + _lookAtDirection;
     
     public static event Action<int> OnSnakeScore;
 
@@ -93,9 +93,9 @@ public class SnakeHead : MonoBehaviour {
     /// This is called by the rythmActivated event that's in RythmHandler
     /// It checks the grid for collision, and emit events depending on the result
     /// </summary>
-    private void ChangePosition()
-    {
-        GameBoard.CheckCollision(NextPosition, out ICollisionable collisionNode);
+    private void ChangePosition() {
+        _nextPositionToMove = GameBoard.GetNextGridPosition(_snakeBody[0].transform.position, _lookAtDirection);
+        GameBoard.CheckCollision(_nextPositionToMove, out ICollisionable collisionNode);
 
         if (collisionNode != null)
         {
@@ -178,7 +178,7 @@ public class SnakeHead : MonoBehaviour {
     public void GrowSnake()
     {
         Vector2Int currentSnakeHeadPosition = SnakeHeadPosition;
-        UpdateSnakeBodyPartPosition(0, NextPosition);
+        UpdateSnakeBodyPartPosition(0, _nextPositionToMove);
         
         GameObject newBodyPart = GameBoard.InstantiateNode(snakeBodyPrefab, currentSnakeHeadPosition);
 
@@ -195,7 +195,7 @@ public class SnakeHead : MonoBehaviour {
     private void SearchForPath()
     {
         PathRequestManager.RequestPath(
-            Vector2Int.FloorToInt(NextPosition),
+            Vector2Int.FloorToInt(_nextPositionToMove),
             Vector2Int.FloorToInt(GameBoard.FoodPosition),
             OnSearchFinished
         );
@@ -206,7 +206,7 @@ public class SnakeHead : MonoBehaviour {
     /// </summary>
     private void MoveSnake()
     {
-        Vector2Int moveToPosition = NextPosition;
+        Vector2Int moveToPosition = _nextPositionToMove;
 
         for (int index = 0; index < _snakeBody.Count; index++)
         {
@@ -236,7 +236,7 @@ public class SnakeHead : MonoBehaviour {
         if (_autopilotPath != null && _autopilotPath.Length > 0)
         {
             Gizmos.color = Color.black;
-            Gizmos.DrawLine(NextPosition.ToVector2(), new Vector3(_autopilotPath[_autopilotPathIndex].x, _autopilotPath[_autopilotPathIndex].y));
+            Gizmos.DrawLine(_nextPositionToMove.ToVector2(), new Vector3(_autopilotPath[_autopilotPathIndex].x, _autopilotPath[_autopilotPathIndex].y));
             
             for (int i = 0; i < _autopilotPath.Length; i++) {
                 if (i != _autopilotPath.Length - 1)

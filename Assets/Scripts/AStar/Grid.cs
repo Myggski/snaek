@@ -7,6 +7,8 @@ namespace AStar {
         private LayerMask unwalkableMask;
         [SerializeField]
         private Vector2Int gridWorldSize;
+        [SerializeField]
+        private Vector2Int tileSize = new Vector2Int(1, 1);
         
         private Node[,] _grid;
         public int GridSizeX => gridWorldSize.x;
@@ -34,6 +36,10 @@ namespace AStar {
         {
             Node node = _grid[position.x, position.y];
             collisionNode = node.CollisionGameObject;
+        }
+
+        public Vector2Int GetNextGridPosition(Vector3 position, Vector2Int lookAtDirection) {
+            return Vector2Int.FloorToInt(position) + lookAtDirection * tileSize;
         }
 
         public void MoveNode(Vector2Int from, Vector2Int to)

@@ -59,7 +59,11 @@ public class GameBoard : SingletonBase<GameBoard>
     public static void CheckCollision(Vector2Int nextPosition, out ICollisionable collisionNode)
     {
         instance._grid.CheckCollision(nextPosition, out collisionNode);
-    } 
+    }
+
+    public static Vector2Int GetNextGridPosition(Vector3 position, Vector2Int lookAtDirection) {
+        return instance._grid.GetNextGridPosition(position, lookAtDirection);
+    }
 
     /// <summary>
     /// Triggers the Game over event
