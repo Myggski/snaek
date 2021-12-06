@@ -83,7 +83,7 @@ public class SnakeHead : MonoBehaviour {
     private bool IsOppositeDirection(Vector2 checkDirection) {
         if (_snakeBody.Count > 1)
         {
-            return checkDirection == Vector2Int.FloorToInt(_snakeBody[0].transform.position - _snakeBody[1].transform.position);    
+            return checkDirection * -1 == Vector2Int.FloorToInt(_snakeBody[0].transform.position - _snakeBody[1].transform.position);    
         }
         
         return checkDirection * -1 == _lookAtDirection;
