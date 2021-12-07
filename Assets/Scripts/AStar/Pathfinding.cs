@@ -17,17 +17,17 @@ namespace AStar
             _pathRequestManager = GetComponent<PathRequestManager>();
         }
 
-        public void StartFindPath(Vector2Int startPosition, Vector2Int targetPosition)
+        public void StartFindPath(Vector2 startWorldPosition, Vector2 targetWorldPosition)
         {
-            StartCoroutine(FindPath(startPosition, targetPosition));
+            StartCoroutine(FindPath(startWorldPosition, targetWorldPosition));
         }
 
-        private IEnumerator FindPath(Vector2Int startPosition, Vector2Int targetPosition)
+        private IEnumerator FindPath(Vector2 startWorldPosition, Vector2 targetWorldPosition)
         {
             Vector2Int[] waypoints = new Vector2Int[0];
             bool pathSuccess = false;
-            Node startNode = _grid.NodeFromWorldPoint(startPosition);
-            Node targetNode = _grid.NodeFromWorldPoint(targetPosition);
+            Node startNode = _grid.NodeFromWorldPoint(_grid.FromWorldToGrid(startWorldPosition));
+            Node targetNode = _grid.NodeFromWorldPoint(_grid.FromWorldToGrid(targetWorldPosition));
 
             if (startNode.Walkable && targetNode.Walkable)
             {
@@ -111,15 +111,15 @@ namespace AStar
 
             if (path.Count > 0)
             {
-                waypoints.Add(path[0].WorldPosition);
+                waypoints.Add(path[0].GridPosition);
                 
                 for (int i = 1; i < path.Count; i++)
                 {
                     Vector2Int directionNew =
-                        new Vector2Int(path[i - 1].X - path[i].X, path[i - 1].Y - path[i].Y);
+                        new Vector2Int(path[i - 1].GridPosition.x - path[i].GridPosition.x, path[i - 1].GridPosition.y - path[i].GridPosition.y);
                     if (directionNew != directionOld)
                     {
-                        waypoints.Add(path[i - 1].WorldPosition);
+                        waypoints.Add(path[i - 1].GridPosition);
                     }
 
                     directionOld = directionNew;
@@ -131,8 +131,8 @@ namespace AStar
 
         private int GetDistance(Node from, Node to)
         {
-            int distanceX = Mathf.Abs(from.X - to.X);
-            int distanceY = Mathf.Abs(from.Y - to.Y);
+            int distanceX = Mathf.Abs(from.GridPosition.x - to.GridPosition.x);
+            int distanceY = Mathf.Abs(from.GridPosition.y - to.GridPosition.y);
 
             if (distanceX > distanceY)
             {

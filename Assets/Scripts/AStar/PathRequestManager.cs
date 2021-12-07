@@ -17,9 +17,9 @@ namespace AStar {
             _pathfinding = GetComponent<Pathfinding>();
         }
 
-        public static void RequestPath(Vector2Int startPosition, Vector2Int targetPosition,
+        public static void RequestPath(Vector2 startWorldPosition, Vector2 targetWorldPosition,
             Action<Vector2Int[], bool> callback) {
-            PathRequest newRequest = new PathRequest(startPosition, targetPosition, callback);
+            PathRequest newRequest = new PathRequest(startWorldPosition, targetWorldPosition, callback);
             instance._pathRequests.Enqueue(newRequest);
             instance.TryProcessNext();
         }
@@ -39,14 +39,14 @@ namespace AStar {
         }
 
         private struct PathRequest {
-            public Vector2Int StartPosition;
-            public Vector2Int TargetPosition;
+            public Vector2 StartPosition;
+            public Vector2 TargetPosition;
             public Action<Vector2Int[], bool> Callback;
 
-            public PathRequest(Vector2Int startPosition, Vector2Int targetPosition,
+            public PathRequest(Vector2 startWorldPosition, Vector2 targetWorldPosition,
                 Action<Vector2Int[], bool> callback) {
-                StartPosition = startPosition;
-                TargetPosition = targetPosition;
+                StartPosition = startWorldPosition;
+                TargetPosition = targetWorldPosition;
                 Callback = callback;
             }
         }

@@ -5,7 +5,10 @@ namespace AStar
     public class Node : IHeapItem<Node>
     {
         private ICollisionable _collisionableGameObject;
-        private Vector2Int _worldPosition;
+        private int _x;
+        private int _y;
+        private Vector2Int _gridPosition;
+        private Vector2 _worldPosition;
         private int _gCost;
         private int _hCost;
         private Node _parent;
@@ -40,12 +43,11 @@ namespace AStar
         public int FCost => _gCost + _hCost;
         public int MovementPenelty => _movementPenelty;
         public bool Walkable => ReferenceEquals(_collisionableGameObject, null) || _collisionableGameObject.TileType != TileType.Obstacle;
-        public int X => _worldPosition.x;
-        public int Y => _worldPosition.y;
-        public Vector2Int WorldPosition => _worldPosition;
+        public Vector2Int GridPosition => _gridPosition;
+        public Vector2 WorldPosition => _worldPosition;
 
-        public Node(ICollisionable collisionableGameObject, Vector2Int worldPosition, int movementPenelty)
-        {
+        public Node(ICollisionable collisionableGameObject, Vector2Int gridPosition, Vector2 worldPosition, int movementPenelty) {
+            _gridPosition = gridPosition;
             _collisionableGameObject = collisionableGameObject;
             _worldPosition = worldPosition;
             _movementPenelty = movementPenelty;

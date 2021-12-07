@@ -37,7 +37,7 @@ public class FoodSpawner : MonoBehaviour {
     /// </summary>
     private void TrySpawnFood()
     {
-        Vector2Int? emptyTilePosition = GameBoard.GetRandomWalkableNodePosition();
+        Vector2? emptyTilePosition = GameBoard.GetRandomWalkableNodePosition();
 
         if (!emptyTilePosition.HasValue)
         {

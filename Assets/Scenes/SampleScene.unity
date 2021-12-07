@@ -481,6 +481,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   gridWorldSize: {x: 42, y: 32}
+  tileSize: 1
 --- !u!1 &311127759
 GameObject:
   m_ObjectHideFlags: 0

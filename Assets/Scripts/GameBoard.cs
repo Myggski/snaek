@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using AStar;
 using UnityEngine;
 using Grid = AStar.Grid;
 
@@ -11,7 +13,7 @@ public class GameBoard : SingletonBase<GameBoard>
     private Grid _grid;
     private static bool _isGamePaused;
     private static bool _isGameOver;
-    private static Vector2Int _foodPosition;
+    private static Vector2 _foodWorldPosition;
     private static bool _isAutopilot;
     
     public static event Action OnGameOver;
@@ -21,7 +23,6 @@ public class GameBoard : SingletonBase<GameBoard>
     public static bool IsGamePaused => _isGamePaused;
     public static bool IsGameOver => _isGameOver;
     public static bool IsAutopilot => _isAutopilot;
-    public static Vector2Int FoodPosition => _foodPosition;
 
     /// <summary>
     /// Gets the grid and generates level and spawns snake
@@ -46,7 +47,7 @@ public class GameBoard : SingletonBase<GameBoard>
     /// Gets a random walkable node from grid
     /// </summary>
     /// <returns></returns>
-    public static Vector2Int? GetRandomWalkableNodePosition()
+    public static Vector2? GetRandomWalkableNodePosition()
     {
         return instance._grid.GetRandomWalkableNodePosition();
     }
@@ -97,8 +98,8 @@ public class GameBoard : SingletonBase<GameBoard>
     /// </summary>
     /// <param name="foodPrefab">Prefab of food</param>
     /// <param name="worldPosition">Where the food will be spawned</param>
-    public static void SpawnFood(GameObject foodPrefab, Vector2Int worldPosition) {
-        _foodPosition = worldPosition;
+    public static void SpawnFood(GameObject foodPrefab, Vector2 worldPosition) {
+        _foodWorldPosition = worldPosition;
         InstantiateNode(foodPrefab, worldPosition);
         
         OnFoodSpawned?.Invoke();
@@ -110,7 +111,7 @@ public class GameBoard : SingletonBase<GameBoard>
     /// <param name="prefab">Tile prefab</param>
     /// <param name="worldPosition">Where in the world it should be instantiated</param>
     /// <returns></returns>
-    public static GameObject InstantiateNode(GameObject prefab, Vector2Int worldPosition)
+    public static GameObject InstantiateNode(GameObject prefab, Vector2 worldPosition)
     {
         GameObject node = Instantiate(prefab, new Vector2(worldPosition.x, worldPosition.y), instance.transform.rotation, instance.transform);
 
@@ -143,6 +144,14 @@ public class GameBoard : SingletonBase<GameBoard>
         }
     }
 
+    public static void SearchAutopilotPath(Vector2 worldPosition, Vector2Int lookAtDirection, Action<Vector2[], bool> callback) {
+        PathRequestManager.RequestPath(
+            GetNextGridPosition(worldPosition, lookAtDirection),
+            _foodWorldPosition,
+            (path, pathSuccessful) => callback(path.Select(p => instance._grid.FromGridToWorld(p)).ToArray(), pathSuccessful)
+        );
+    }
+
     /// <summary>
     /// Spawns snake into the game
     /// </summary>
@@ -158,14 +167,14 @@ public class GameBoard : SingletonBase<GameBoard>
     {
         for (int x = 0; x < _grid.GridSizeX; x++)
         {
-            InstantiateNode(wallPrefab, new Vector2Int(x, 0));
-            InstantiateNode(wallPrefab, new Vector2Int(x, _grid.GridSizeY - 1));
+            InstantiateNode(wallPrefab, _grid.FromGridToWorld(new Vector2Int(x, 0)));
+            InstantiateNode(wallPrefab, _grid.FromGridToWorld(new Vector2Int(x, _grid.GridSizeY - 1)));
         }
 
         for (int y = 0; y < _grid.GridSizeY; y++)
         {
-            InstantiateNode(wallPrefab, new Vector2Int(0, y));
-            InstantiateNode(wallPrefab, new Vector2Int(_grid.GridSizeX - 1, y));
+            InstantiateNode(wallPrefab, _grid.FromGridToWorld(new Vector2Int(0, y)));
+            InstantiateNode(wallPrefab, _grid.FromGridToWorld(new Vector2Int(_grid.GridSizeX - 1, y)));
         }
     }
 

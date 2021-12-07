@@ -13,11 +13,11 @@ public class SnakeHead : MonoBehaviour {
     private PogList<GameObject> _snakeBody;
     private int _totalScore;
     private Vector2Int _lookAtDirection = Vector2Int.right;
-    private Vector2Int[] _autopilotPath;
+    private Vector2[] _autopilotPath;
     private int _autopilotPathIndex = 0;
     private Vector2Int _nextPositionToMove;
 
-    private Vector2Int SnakeHeadPosition => Vector2Int.FloorToInt(_snakeBody[0].transform.position);
+    private Vector2 SnakeHeadWorldPosition => _snakeBody[0].transform.position;
     
     public static event Action<int> OnSnakeScore;
 
@@ -112,18 +112,10 @@ public class SnakeHead : MonoBehaviour {
         }
     }
 
-    private void OnSearchFinished(Vector2Int[] path, bool pathSuccessful) {
-        if (pathSuccessful) {
-            _autopilotPath = path;
-        }
-        
-        _autopilotPathIndex = 0;
-    }
-
     private void AutoPilotDirectionHandling() {
-        Vector2Int currentWaypoint = _autopilotPath[_autopilotPathIndex];
+        Vector2 currentWaypoint = _autopilotPath[_autopilotPathIndex];
 
-        if (SnakeHeadPosition == currentWaypoint) {
+        if (SnakeHeadWorldPosition == currentWaypoint) {
             _autopilotPathIndex++;
 
             if (_autopilotPathIndex >= _autopilotPath.Length)
@@ -133,21 +125,21 @@ public class SnakeHead : MonoBehaviour {
         }
         
         currentWaypoint = _autopilotPath[_autopilotPathIndex];
-        Vector2Int direction = (currentWaypoint - SnakeHeadPosition).Normalize();
+        Vector2 direction = (currentWaypoint - SnakeHeadWorldPosition).normalized;
 
         if (IsOppositeDirection(direction))
         {
             direction = GetRandomDirection(direction);
         }
 
-        _lookAtDirection = direction;
+        _lookAtDirection = direction.ToVector2Int();
     }
     
     /// <summary>
     /// Gets random direction
     /// </summary>
     /// <returns></returns>
-    private Vector2Int GetRandomDirection(Vector2Int currentDirection)
+    private Vector2Int GetRandomDirection(Vector2 currentDirection)
     {
         Vector2Int[] directions =
         {
@@ -177,10 +169,10 @@ public class SnakeHead : MonoBehaviour {
     /// </summary>
     public void GrowSnake()
     {
-        Vector2Int currentSnakeHeadPosition = SnakeHeadPosition;
+        Vector2 currentSnakeHeadWorldPosition = SnakeHeadWorldPosition;
         UpdateSnakeBodyPartPosition(0, _nextPositionToMove);
         
-        GameObject newBodyPart = GameBoard.InstantiateNode(snakeBodyPrefab, currentSnakeHeadPosition);
+        GameObject newBodyPart = GameBoard.InstantiateNode(snakeBodyPrefab, currentSnakeHeadWorldPosition);
 
         if (_snakeBody.Count == 1) {
             _snakeBody.Add(newBodyPart);
@@ -194,11 +186,19 @@ public class SnakeHead : MonoBehaviour {
 
     private void SearchForPath()
     {
-        PathRequestManager.RequestPath(
-            Vector2Int.FloorToInt(_nextPositionToMove),
-            Vector2Int.FloorToInt(GameBoard.FoodPosition),
-            OnSearchFinished
-        );
+        if (!GameBoard.IsAutopilot) {
+            return;
+        }
+
+        GameBoard.SearchAutopilotPath(_snakeBody[0].transform.position, _lookAtDirection, OnSearchFinished);
+    }
+    
+    private void OnSearchFinished(Vector2[] path, bool pathSuccessful) {
+        if (pathSuccessful) {
+            _autopilotPath = path;
+        }
+        
+        _autopilotPathIndex = 0;
     }
 
     /// <summary>

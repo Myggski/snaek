@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Extensions;
 using UnityEngine;
 
 namespace AStar {
@@ -7,8 +8,9 @@ namespace AStar {
         private LayerMask unwalkableMask;
         [SerializeField]
         private Vector2Int gridWorldSize;
+
         [SerializeField]
-        private Vector2Int tileSize = new Vector2Int(1, 1);
+        private int tileSize = 1;
         
         private Node[,] _grid;
         public int GridSizeX => gridWorldSize.x;
@@ -24,17 +26,28 @@ namespace AStar {
 
             for (int x = 0; x < GridSizeX; x++) {
                 for (int y = 0; y < GridSizeY; y++) {
+                    Vector2Int gridPosition = new Vector2Int(x, y);
                     Collider2D[] colliders = new Collider2D[1];
                     Physics2D.OverlapBoxNonAlloc(new Vector2(x, y), new Vector2(0.9f, 0.9f), 0, colliders, unwalkableMask);
 
-                    _grid[x, y] = new Node(colliders[0]?.gameObject?.GetComponent<ICollisionable>(), new Vector2Int(x, y), 0);
+                    _grid[x, y] = new Node(colliders[0]?.gameObject?.GetComponent<ICollisionable>(), gridPosition, FromGridToWorld(gridPosition), 0);
                 }   
             }
         }
-
-        public void CheckCollision(Vector2Int position, out ICollisionable collisionNode)
+        
+        public Vector2Int FromWorldToGrid(Vector3 worldPosition)
         {
-            Node node = _grid[position.x, position.y];
+            return Vector2Int.RoundToInt(worldPosition / tileSize);
+        }
+        
+        public Vector2 FromGridToWorld(Vector2Int gridPos) {
+            return (gridPos * tileSize);
+        }
+
+        public void CheckCollision(Vector2 worldPosition, out ICollisionable collisionNode) {
+            Vector2Int gridPosition = FromWorldToGrid(worldPosition);
+
+            Node node = _grid[gridPosition.x, gridPosition.y];
             collisionNode = node.CollisionGameObject;
         }
 
@@ -42,20 +55,22 @@ namespace AStar {
             return Vector2Int.FloorToInt(position) + lookAtDirection * tileSize;
         }
 
-        public void MoveNode(Vector2Int from, Vector2Int to)
-        {
+        public void MoveNode(Vector2 fromWorld, Vector2 toWorld) {
+            Vector2Int from = FromWorldToGrid(fromWorld);
+            Vector2Int to = FromWorldToGrid(toWorld);
+
             _grid[to.x, to.y].CollisionGameObject = _grid[from.x, from.y].CollisionGameObject;
-            _grid[from.x, from.y] = new Node(null, from, 0);
+            _grid[from.x, from.y] = new Node( null, from, FromGridToWorld(from), 0);
         }
 
         public List<Node> GetNeigbors(Node node) {
             List<Node> neigbors = new List<Node>();
             Vector2Int[] directions =
             {
-                node.WorldPosition + Vector2Int.left,
-                node.WorldPosition + Vector2Int.right,
-                node.WorldPosition + Vector2Int.up,
-                node.WorldPosition + Vector2Int.down
+                node.GridPosition + Vector2Int.left,
+                node.GridPosition + Vector2Int.right,
+                node.GridPosition + Vector2Int.up,
+                node.GridPosition + Vector2Int.down
             };
 
             foreach (Vector2Int direction in directions)
@@ -74,15 +89,15 @@ namespace AStar {
             return neigbors;
         }
         
-        public Vector2Int? GetRandomWalkableNodePosition()
+        public Vector2? GetRandomWalkableNodePosition()
         {
-            Vector2Int[] emptyNOdes = GetWalkableNodes();
+            Vector2Int[] emptyNodes = GetWalkableNodes();
 
-            if (emptyNOdes.Length == 0) {
+            if (emptyNodes.Length == 0) {
                 return null;
             }
 
-            return emptyNOdes[Random.Range(0, emptyNOdes.Length)];
+            return FromGridToWorld(emptyNodes[Random.Range(0, emptyNodes.Length)]);
         }
 
         /// <summary>
@@ -103,9 +118,9 @@ namespace AStar {
             return emptyNodes.ToArray();
         }
 
-        public void AddNode(Vector2Int worldPosition, ICollisionable collisionNode)
-        {
-            _grid[worldPosition.x, worldPosition.y] = new Node(collisionNode, worldPosition, 0);
+        public void AddNode(Vector2 worldPosition, ICollisionable collisionNode) {
+            Vector2Int gridPosition = FromWorldToGrid(worldPosition);
+            _grid[gridPosition.x, gridPosition.y] = new Node(collisionNode, gridPosition, worldPosition, 0);
         }
 
         public Node NodeFromWorldPoint(Vector2Int worldPosition) {
@@ -118,7 +133,7 @@ namespace AStar {
             if (_grid != null) {
                 foreach (Node node in _grid) {
                     Gizmos.color = node.Walkable ? Color.white : Color.red;
-                    Gizmos.DrawCube(new Vector3(node.X, node.Y, 0f), Vector3.one);
+                    Gizmos.DrawCube(new Vector3(node.WorldPosition.x, node.WorldPosition.y, 0f), Vector3.one);
                 }
             }
         }
